@@ -1,19 +1,15 @@
 name: Deploy to GitHub Pages
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
-
 jobs:
   deploy:
     environment:
@@ -22,22 +18,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # ── nodejs (Event Loop) → /education/node/ ──
       - run: npm install
         working-directory: nodejs
-
       - run: npm run build
         working-directory: nodejs
 
-      - uses: actions/configure-pages@v4
+      # ── nest (Lifecycle) → /education/nest/ ──
+      - run: npm install
+        working-directory: nest/lifecycle
+      - run: npm run build
+        working-directory: nest/lifecycle
 
+      - run: |
+          mkdir -p _site
+          cp -r nodejs/dist/.         _site/
+          mkdir -p _site/nest
+          cp -r nest/lifecycle/dist/. _site/nest/
+
+      - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: nodejs/dist
-
-      - uses: actions/deploy-pages@v4
-        id: deployment
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
