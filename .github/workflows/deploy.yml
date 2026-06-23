@@ -1,48 +1,73 @@
 name: Deploy to GitHub Pages
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 concurrency:
   group: pages
   cancel-in-progress: true
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # One install for the whole workspace (root + every lesson).
+      # Uses `npm install` so it works with or without a committed package-lock.json.
+      # Once you commit package-lock.json you can switch this to `npm ci` and add
+      # `cache: npm` above for faster builds.
+      - run: npm install
+
+      # Build every workspace that has a build script.
+      - run: npm run build --workspaces --if-present
+
+      # Assemble the deployable site.
+      #   home/dist                -> site root (served at /education/)
+      #   <category>/<lesson>/dist -> /education/<category>/<lesson>/
+      # Auto-discovers lessons by their vite.config.js — adding a new lesson
+      # needs no change here.
+      - name: Assemble _site
+        run: |
+          set -euo pipefail
+          rm -rf _site && mkdir -p _site
+          while IFS= read -r cfg; do
+            dir="$(dirname "$cfg")"
+            [ -d "$dir/dist" ] || continue
+            if [ "$dir" = "home" ]; then
+              cp -r "$dir/dist/." _site/
+            else
+              mkdir -p "_site/$dir"
+              cp -r "$dir/dist/." "_site/$dir/"
+            fi
+            echo "  packed: $dir"
+          done < <(find home nodejs nest -name vite.config.js)
+          # SPA-friendly 404 so deep links resolve to the hub.
+          cp _site/index.html _site/404.html
+
+      - uses: actions/configure-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
   deploy:
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      # ── nodejs (Event Loop) → /education/node/ ──
-      - run: npm install
-        working-directory: nodejs
-      - run: npm run build
-        working-directory: nodejs
-
-      # ── nest (Lifecycle) → /education/nest/ ──
-      - run: npm install
-        working-directory: nest/lifecycle
-      - run: npm run build
-        working-directory: nest/lifecycle
-
-      - run: |
-          mkdir -p _site
-          cp -r nodejs/dist/.         _site/
-          mkdir -p _site/nest
-          cp -r nest/lifecycle/dist/. _site/nest/
-
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

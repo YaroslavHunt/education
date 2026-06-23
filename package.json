@@ -1,0 +1,22 @@
+{
+  "name": "education",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive platform for learning Node.js and NestJS internals",
+  "workspaces": [
+    "home",
+    "nodejs/*",
+    "nest/*"
+  ],
+  "scripts": {
+    "dev:home": "npm run dev -w home",
+    "dev:event-loop": "npm run dev -w nodejs/event-loop",
+    "dev:lifecycle": "npm run dev -w nest/lifecycle",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.7"
+  }
+}
