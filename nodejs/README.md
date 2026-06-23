@@ -30,4 +30,4 @@ nodejs/
 
 1. Пуш на `main` гілку
 2. GitHub Actions автоматично білдить і деплоїть
-3. Живий сайт: `https://YaroslavHunt.github.io/nodejs/`
+3. Живий сайт: `https://YaroslavHunt.github.io/education/`
