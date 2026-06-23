@@ -169,7 +169,7 @@ function Category({ cat, index }) {
 // ─── Lesson card ─────────────────────────────────────────────────────────────
 function LessonCard({ lesson, color }) {
   return (
-    
+    <a
       className="card"
       href={href(lesson.path)}
       style={{ '--c': color }}
